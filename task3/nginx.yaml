@@ -1,0 +1,118 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartcow-nginx
+  namespace: nginx
+spec:
+  selector:
+    matchLabels:
+      app: smartcow-nginx
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      #maxSurge: 25%
+  template:
+    metadata:
+      labels:
+        app: smartcow-nginx
+        version: "1"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - "smartcow-nginx"
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      containers:
+      - name: smartcow-nginx
+        image: quay.io/tribuvan/smartcow:nginx-v2
+        imagePullPolicy: Always
+        env:
+          - name: API_HOSTNAME
+            value: "smartcow-api.api.svc.cluster.local"
+          - name: NODE_HOSTNAME
+            value: "smartcow-node.node.svc.cluster.local"
+
+        volumeMounts:
+        - mountPath: /persistence
+          name: persistence-volume
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 90
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+          periodSeconds: 5
+        resources:
+          limits:
+            memory: 1000Mi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+        ports:
+        - containerPort: 80
+      volumes:
+      - name: persistence-volume
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartcow-nginx
+  namespace: nginx
+spec:
+  selector:
+   app: smartcow-nginx
+  ports:
+  - port: 80
+    name: http
+    targetPort: 80
+  type: NodePort
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: smartcow-nginx
+  namespace: nginx
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: smartcow-nginx
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        averageUtilization: 50
+        type: Utilization

@@ -1,0 +1,111 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: node
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartcow-node
+  namespace: node
+spec:
+  selector:
+    matchLabels:
+      app: smartcow-node
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      #maxSurge: 25%
+  template:
+    metadata:
+      labels:
+        app: smartcow-node
+        version: "1"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - "smartcow-node"
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      containers:
+      - name: smartcow-node
+        image: quay.io/tribuvan/smartcow:node-v1
+        volumeMounts:
+        - mountPath: /persistence
+          name: persistence-volume
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 90
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+          periodSeconds: 5
+        resources:
+          limits:
+            memory: 1000Mi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+        ports:
+        - containerPort: 3000
+      volumes:
+      - name: persistence-volume
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartcow-node
+  namespace: node
+spec:
+  selector:
+   app: smartcow-node
+  ports:
+  - port: 3000
+    name: http
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: smartcow-node
+  namespace: node
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: smartcow-node
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        averageUtilization: 50
+        type: Utilization

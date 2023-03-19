@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+  namespace: nginx
+  labels:
+     app: stg-itsman-main
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing #internet-facing/internal
+    alb.ingress.kubernetes.io/security-groups: sg-05fa48de81514bae8,sg-06506147f7b247e2b
+    alb.ingress.kubernetes.io/subnets: subnet-0a19e0a7cc91ecf2e,subnet-0eb4c2a4cc6ab3ab3
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/certificate-arn: 
+    alb.ingress.kubernetes.io/load-balancer-attributes: access_logs.s3.enabled=false,idle_timeout.timeout_seconds=600,routing.http2.enabled=true,deletion_protection.enabled=false
+    alb.ingress.kubernetes.io/tags: Environment=test,Name=test-nginx,ClusterName=eks/cluster
+    alb.ingress.kubernetes.io/healthcheck-path: /ping
+    alb.ingress.kubernetes.io/target-group-attributes: load_balancing.algorithm.type=round_robin
+spec:
+  defaultBackend:
+    service:
+      name: smartcow-nginx
+      port:
+        number: 80
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: smartcow-nginx
+            port:
+              number: 80
