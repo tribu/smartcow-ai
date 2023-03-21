@@ -1,4 +1,4 @@
-version: '3.0'
+version: '3.2'
 services:
   api:
     image: quay.io/tribuvan/smartcow:api-v1
