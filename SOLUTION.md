@@ -1,24 +1,25 @@
 ## Task 1 - Dockerize the Applications
 1. Create a docker repo.
 2. from the root directory run the below command to build api,node and nginx docker container
-
+```
 docker build -t quay.io/tribuvan/smartcow:api-v1 -f task1/api/Dockerfile .
 docker push quay.io/tribuvan/smartcow:api-v1
-
 
 docker build -t quay.io/tribuvan/smartcow:node-v1 -f task1/node/Dockerfile .
 docker push quay.io/tribuvan/smartcow:node-v1
 
 docker build -t quay.io/tribuvan/smartcow:nginx-v1 -f task1/nginx/Dockerfile .
 docker push quay.io/tribuvan/smartcow:nginx-v1
+```
 
-3. docker-compose up -d --build
+3. ``` docker-compose up -d --build ```
 4. to verify run command
+```
    docker ps
    curl -svo /dev/null http://localhost:8000/stats
    curl -svo /dev/null http://localhost:3000
    curl -svo /dev/null http://localhost:8080
-
+```
 
 ## Task 2 - Deploy on Cloud
 1. cd to task2 folder . This folder has the terraform file for creating
@@ -30,9 +31,12 @@ docker push quay.io/tribuvan/smartcow:nginx-v1
 
    Please see video task2 attached to email for demo.
 
- 2. terraform plan -out plan.out
-    terraform apply plan.out
-
+ 2.
+ ```
+ terraform init
+ terraform plan -out plan.out
+ terraform apply plan.out
+ ```
  *************sample terraform plan *************************
  ************************************************************
 
