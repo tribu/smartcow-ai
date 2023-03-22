@@ -37,6 +37,7 @@ docker push quay.io/tribuvan/smartcow:nginx-v1
  terraform plan -out plan.out
  terraform apply plan.out
  ```
+ ```
  *************sample terraform plan *************************
  ************************************************************
 
@@ -840,7 +841,7 @@ To perform exactly these actions, run the following command to apply:
  ************************************************************
 
 
-
+```
 
 
 
